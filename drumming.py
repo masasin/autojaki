@@ -167,7 +167,7 @@ class PatternGenerator:
             return Patterns(it.islice(self, index.start, index.stop, index.step))
 
     def head(self, n: int = 5) -> Patterns:
-        return Patterns(self[:n])
+        return self[:n]
 
     def choose(self, n_choices: int = 1) -> Patterns:
         """
