@@ -10,6 +10,7 @@ from typing import Generator, Iterator, Optional, Union
 NoteRepresentations = str
 NoteLength = int
 NoteString = str
+PatternLength = int
 PatternString = str
 DecodeMapping = dict[NoteLength, NoteString]
 EncodeMapping = dict[NoteString, NoteLength]
@@ -43,18 +44,18 @@ class Note:
             note_string: NoteString,
             representations: Optional[NoteRepresentations] = representations,
             display_default: bool = True,
-    ):
+    ) -> "Note":
         return cls(
             cls.encode_mapping(representations)[note_string],
             representations=cls.representations if display_default else representations,
         )
 
     @property
-    def is_single(self):
+    def is_single(self) -> bool:
         return self.length == 1
 
     @property
-    def is_double(self):
+    def is_double(self) -> bool:
         return self.length == 2
 
 
@@ -69,7 +70,7 @@ class Pattern:
     def __repr__(self) -> str:
         return f"Pattern({str(self)})"
 
-    def __str__(self) -> str:
+    def __str__(self) -> PatternString:
         return self.separator.join(str(note) for note in self.notes)
 
     def __add__(self, other) -> "Pattern":
@@ -84,7 +85,7 @@ class Pattern:
             pattern_string: PatternString,
             representations: Optional[NoteRepresentations] = None,
             display_default: bool = True,
-    ):
+    ) -> "Pattern":
         return cls((
             Note.from_string(
                 note_string,
@@ -98,7 +99,7 @@ class Pattern:
 class Patterns:
     def __init__(self, patterns: Iterator[Pattern], *, separator: str = ", "):
         self.patterns: Iterator[Pattern] = patterns
-        self.separator = separator
+        self.separator: str = separator
 
     def __repr__(self) -> str:
         return f"Patterns([{str(self)}])"
@@ -120,11 +121,11 @@ class Patterns:
 
 
 class PatternGenerator:
-    def __init__(self, pattern_length):
-        self.pattern_length = pattern_length
-        self.patterns = self._all_patterns()
+    def __init__(self, pattern_length: PatternLength):
+        self.pattern_length: PatternLength = pattern_length
+        self.patterns: Patterns = self._all_patterns()
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.n_combos(self.pattern_length)
 
     @staticmethod
@@ -133,7 +134,7 @@ class PatternGenerator:
         phi = (5**0.5 + 1)/2
         return int((phi**n - (-phi)**(-n)) / 5**0.5)
 
-    def n_combos(self, pattern_length: int) -> int:
+    def n_combos(self, pattern_length: PatternLength) -> int:
         """Return the number of note combinations with a total length of `length`."""
         return self._fib(pattern_length + 1)
 
@@ -199,11 +200,11 @@ class Midi:
 
 class Synthesizer(abc.ABC):
     @abc.abstractmethod
-    def play_pattern(self, pattern: Pattern):
+    def play_pattern(self, pattern: Pattern) -> Generator:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def play_note(self, note: Note):
+    def play_note(self, note: Note) -> Generator:
         raise NotImplementedError
 
 
@@ -213,14 +214,14 @@ class MidiSynthesizer(Synthesizer):
         self.velocities = velocities
         self.voice = voice
 
-    def play_pattern(self, pattern: Pattern):
+    def play_pattern(self, pattern: Pattern) -> Generator[Midi, None, None]:
         pattern_prev, pattern_curr = it.tee(pattern)
         first_note = next(pattern_curr)
         yield from self.play_note(first_note)
         for prev, curr in zip(pattern_prev, pattern_curr):
             yield from self.play_note(curr, follows_double=prev.is_double)
 
-    def play_note(self, note: Note, follows_double: bool = False):
+    def play_note(self, note: Note, follows_double: bool = False) -> Generator[Midi, None, None]:
         if note.is_single:
             velocity = self.velocities.accent if follows_double else self.velocities.normal
             yield Midi(voice=self.voice, note_number=self.note_number, velocity=velocity)
