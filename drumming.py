@@ -57,7 +57,7 @@ class Note:
 
 
 class Pattern:
-    def __init__(self, notes: Iterator[Note], *, separator: str = " "):
+    def __init__(self, notes: Iterator[Note], *, separator: str = ""):
         self.notes: Iterator[Note] = notes
         self.separator: str = separator
 
