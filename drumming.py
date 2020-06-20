@@ -8,7 +8,6 @@ from typing import Generator, Iterator, Union
 
 NoteLength = int
 NoteString = str
-PatternString = str
 NoteMapping = dict[NoteLength, NoteString]
 
 
@@ -46,13 +45,12 @@ class Note:
         2: "–",
     }
 
-    def __init__(self, length, number=DEFAULT_NOTE_NUMBER):
+    def __init__(self, length):
         self.length = length
-        self.number = number
         self.symbol = self.symbols[length]
 
     def __repr__(self) -> str:
-        return f"Note({self.length}, {self.number})"
+        return f"Note({self.length})"
 
     def __str__(self) -> NoteString:
         return self.symbol
@@ -69,7 +67,7 @@ class Pattern:
     def __repr__(self) -> str:
         return f"Pattern({str(self)})"
 
-    def __str__(self) -> PatternString:
+    def __str__(self) -> str:
         return self.separator.join(str(note) for note in self.notes)
 
     def __add__(self, other):
