@@ -3,12 +3,14 @@ import functools as ft
 import itertools as it
 import operator as op
 import random
-from typing import Generator, Iterator, Union
+from typing import Generator, Iterator, Optional, Union
 
 
 NoteLength = int
 NoteString = str
-NoteMapping = dict[NoteLength, NoteString]
+PatternString = str
+DecodeMapping = dict[NoteLength, NoteString]
+EncodeMapping = dict[NoteString, NoteLength]
 
 
 SYMBOLS: NoteMapping = {
@@ -40,20 +42,31 @@ class Synthesizer:
 
 
 class Note:
-    symbols: NoteMapping = {
+    _decode_mapping: DecodeMapping = {
         1: "·",
         2: "–",
     }
 
+    _encode_mapping: EncodeMapping = {
+        "·": 1,
+        "–": 2,
+    }
+
     def __init__(self, length):
         self.length = length
-        self.symbol = self.symbols[length]
+        self.symbol = self._decode_mapping[length]
 
     def __repr__(self) -> str:
         return f"Note({self.length})"
 
     def __str__(self) -> NoteString:
         return self.symbol
+
+    @classmethod
+    def from_string(cls, note_string: NoteString, mapping: Optional[EncodeMapping] = None):
+        if mapping is None:
+            mapping = cls._encode_mapping
+        return cls(mapping[note_string])
 
 
 class Pattern:
@@ -75,6 +88,10 @@ class Pattern:
             return Pattern(it.chain(self.notes, other))
         elif isinstance(other, Pattern):
             return Pattern(it.chain(self.notes, other.notes))
+
+    @classmethod
+    def from_string(cls, pattern_string: PatternString, mapping: Optional[EncodeMapping] = None):
+        return cls((Note.from_string(note_string, mapping=mapping) for note_string in pattern_string))
 
 
 class Patterns:
