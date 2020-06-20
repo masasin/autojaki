@@ -70,7 +70,7 @@ class Pattern:
     def __str__(self) -> str:
         return self.separator.join(str(note) for note in self.notes)
 
-    def __add__(self, other):
+    def __add__(self, other) -> "Pattern":
         if isinstance(other, Note):
             return Pattern(it.chain(self.notes, other))
         elif isinstance(other, Pattern):
@@ -82,22 +82,22 @@ class Patterns:
         self.patterns: Iterator[Pattern] = patterns
         self.separator = separator
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Patterns([{str(self)}])"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.separator.join(str(pattern) for pattern in self)
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[Pattern, None, None]:
         yield from self.patterns
     
-    def __add__(self, other):
+    def __add__(self, other) -> "Patterns":
         if isinstance(other, Pattern):
-            return it.chain(self.patterns, other)
+            return Patterns(it.chain(self.patterns, other))
         elif isinstance(other, Patterns):
-            return it.chain(self.patterns, other.patterns)
+            return Patterns(it.chain(self.patterns, other.patterns))
 
-    def join(self):
+    def join(self) -> Pattern:
         return ft.reduce(op.add, self)
 
 
@@ -171,4 +171,4 @@ if __name__ == "__main__":
     print("  Pattern str:        ", PatternGenerator(5)[3])
     print("Choice:", PatternGenerator(5).choose(5))
     print("Head: ", PatternGenerator(5).head())
-    print("Join: ", PatternGenerator(5).head().join())
+    print(f"Join: {PatternGenerator(5).head().join()!r}")
