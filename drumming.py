@@ -1,4 +1,5 @@
-import dataclasses
+import abc
+import dataclasses as dc
 import functools as ft
 import itertools as it
 import operator as op
@@ -6,6 +7,7 @@ import random
 from typing import Generator, Iterator, Optional, Union
 
 
+NoteRepresentations = str
 NoteLength = int
 NoteString = str
 PatternString = str
@@ -13,48 +15,13 @@ DecodeMapping = dict[NoteLength, NoteString]
 EncodeMapping = dict[NoteString, NoteLength]
 
 
-SYMBOLS: NoteMapping = {
-    1: "·",
-    2: "–",
-}
-
-
-@dataclasses.dataclass()
-class NoteProperties:
-    note_number: int
-    velocity: int
-
-
-DEFAULT_NOTE_NUMBER = 60
-DEFAULT_NOTE_ACCENT = 127
-DEFAULT_NOTE_NORMAL = 100
-DEFAULT_NOTE_SOFT = 50
-
-
-PROPERTIES = {
-    SYMBOLS[1]: [NoteProperties(note_number=60, velocity=100)],
-    SYMBOLS[2]: [NoteProperties(note_number=60, velocity=100), NoteProperties(note_number=60, velocity=50)],
-}
-
-
-class Synthesizer:
-    pass
-
-
 class Note:
-    _decode_mapping: DecodeMapping = {
-        1: "·",
-        2: "–",
-    }
+    representations: NoteRepresentations = "·–"
 
-    _encode_mapping: EncodeMapping = {
-        "·": 1,
-        "–": 2,
-    }
-
-    def __init__(self, length):
-        self.length = length
-        self.symbol = self._decode_mapping[length]
+    def __init__(self, length: NoteLength, representations: NoteRepresentations = representations):
+        self.length: NoteLength = length
+        self.symbol: NoteString = self.decode_mapping(representations)[length]
+        self._representations: NoteRepresentations = representations
 
     def __repr__(self) -> str:
         return f"Note({self.length})"
@@ -62,11 +29,33 @@ class Note:
     def __str__(self) -> NoteString:
         return self.symbol
 
+    @staticmethod
+    def decode_mapping(representations: NoteRepresentations) -> DecodeMapping:
+        return {length: string for length, string in enumerate(representations, start=1)}
+
+    @staticmethod
+    def encode_mapping(representations: NoteRepresentations) -> EncodeMapping:
+        return {string: length for length, string in enumerate(representations, start=1)}
+
     @classmethod
-    def from_string(cls, note_string: NoteString, mapping: Optional[EncodeMapping] = None):
-        if mapping is None:
-            mapping = cls._encode_mapping
-        return cls(mapping[note_string])
+    def from_string(
+            cls,
+            note_string: NoteString,
+            representations: Optional[NoteRepresentations] = representations,
+            display_default: bool = True,
+    ):
+        return cls(
+            cls.encode_mapping(representations)[note_string],
+            representations=cls.representations if display_default else representations,
+        )
+
+    @property
+    def is_single(self):
+        return self.length == 1
+
+    @property
+    def is_double(self):
+        return self.length == 2
 
 
 class Pattern:
@@ -90,8 +79,20 @@ class Pattern:
             return Pattern(it.chain(self.notes, other.notes))
 
     @classmethod
-    def from_string(cls, pattern_string: PatternString, mapping: Optional[EncodeMapping] = None):
-        return cls((Note.from_string(note_string, mapping=mapping) for note_string in pattern_string))
+    def from_string(
+            cls,
+            pattern_string: PatternString,
+            representations: Optional[NoteRepresentations] = None,
+            display_default: bool = True,
+    ):
+        return cls((
+            Note.from_string(
+                note_string,
+                representations=representations,
+                display_default=display_default
+            )
+            for note_string in pattern_string)
+        )
 
 
 class Patterns:
@@ -181,6 +182,52 @@ class PatternGenerator:
         self.patterns = self._all_patterns()
 
 
+@dc.dataclass
+class SynthVelocities:
+    accent: int = 127
+    normal: int = 100
+    soft: int = 50
+
+
+@dc.dataclass
+class Midi:
+    voice: int = dc.field(repr=False)
+    note_number: int
+    velocity: int
+
+
+class Synthesizer(abc.ABC):
+    @abc.abstractmethod
+    def play_pattern(self, pattern: Pattern):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def play_note(self, note: Note):
+        raise NotImplementedError
+
+
+class MidiSynthesizer(Synthesizer):
+    def __init__(self, note_number: int = 60, velocities: SynthVelocities = SynthVelocities(), voice: int = 0):
+        self.note_number = note_number
+        self.velocities = velocities
+        self.voice = voice
+
+    def play_pattern(self, pattern: Pattern):
+        pattern_prev, pattern_curr = it.tee(pattern)
+        first_note = next(pattern_curr)
+        yield from self.play_note(first_note)
+        for prev, curr in zip(pattern_prev, pattern_curr):
+            yield from self.play_note(curr, follows_double=prev.is_double)
+
+    def play_note(self, note: Note, follows_double: bool = False):
+        if note.is_single:
+            velocity = self.velocities.accent if follows_double else self.velocities.normal
+            yield Midi(voice=self.voice, note_number=self.note_number, velocity=velocity)
+        elif note.is_double:
+            yield Midi(voice=self.voice, note_number=self.note_number, velocity=self.velocities.normal)
+            yield Midi(voice=self.voice, note_number=self.note_number, velocity=self.velocities.soft)
+
+
 if __name__ == "__main__":
     print(f"Patterns repr: {PatternGenerator(5).head()!r}")
     print(" Patterns str:          ", PatternGenerator(5).head())
@@ -189,3 +236,11 @@ if __name__ == "__main__":
     print("Choice:", PatternGenerator(5).choose(5))
     print("Head: ", PatternGenerator(5).head())
     print(f"Join: {PatternGenerator(5).head().join()!r}")
+    print()
+    print("Midi stuff")
+    print("----------")
+    pattern = Pattern.from_string("_...__..", representations="._")
+    synth = MidiSynthesizer()
+    print("Playing", repr(pattern))
+    for output in synth.play_pattern(pattern):
+        print(output)
