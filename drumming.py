@@ -139,7 +139,8 @@ class PatternGenerator:
 
     def _note_counts(self) -> Generator[tuple[NoteLength, NoteLength], None, None]:
         """Yield the count combination of single and double notes with a total length of `length`."""
-        yield from ((n_singles, n_doubles) for n_doubles, n_singles in enumerate(range(self.pattern_length, -1, -2)))
+        for n_doubles, n_singles in enumerate(range(self.pattern_length, -1, -2)):
+            yield n_singles, n_doubles
 
     @staticmethod
     def _generate_pattern(counts: tuple[NoteLength, NoteLength]) -> Generator[Pattern, None, None]:
