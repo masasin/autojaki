@@ -37,7 +37,42 @@ PROPERTIES = {
 }
 
 
-class NoteGenerator:
+class Synthesizer:
+    pass
+
+
+class Note:
+    symbols: NoteMapping = {
+        1: "·",
+        2: "–",
+    }
+
+    def __init__(self, length, number=DEFAULT_NOTE_NUMBER):
+        self.length = length
+        self.number = number
+        self.symbol = self.symbols[length]
+
+    def __repr__(self):
+        return f"Note({self.length}, {self.number})"
+
+    def __str__(self):
+        return self.symbol
+
+
+class Pattern:
+    def __init__(self, notes: Iterator[Note], *, separator: str = " ", synthesizer: Synthesizer=None):
+        self.notes: list[Note] = list(notes)
+        self.separator: str = separator
+        self.synthesizer: Synthesizer = synthesizer
+
+    def __repr__(self):
+        return f"Pattern({self.notes})"
+
+    def __str__(self):
+        return self.separator.join(str(note) for note in self.notes)
+
+
+class PatternGenerator:
     def __init__(self, pattern_length):
         self.pattern_length = pattern_length
 
@@ -59,35 +94,23 @@ class NoteGenerator:
         yield from ((n_singles, n_doubles) for n_doubles, n_singles in enumerate(range(self.pattern_length, -1, -2)))
 
     @staticmethod
-    def _expand_counts(counts: tuple[NoteLength, NoteLength]) -> Generator[LengthPattern, None, None]:
+    def _expand_counts(counts: tuple[NoteLength, NoteLength]) -> Generator[Pattern, None, None]:
         """Yield the combinations for a given number of note types."""
         singles, doubles = counts
         n_notes = singles + doubles
         for positions in it.combinations(range(n_notes), doubles):
-            notes = [1] * n_notes
+            notes = [Note(1)] * n_notes
             for position in positions:
-                notes[position] = 2
-            yield notes
+                notes[position] = Note(2)
+            yield Pattern(notes)
 
-    def all_combos(self) -> Generator[LengthPattern, None, None]:
+    def all_combos(self) -> Generator[Pattern, None, None]:
         """Yield all combinations for a total length."""
         yield from it.chain.from_iterable(self._expand_counts(counts) for counts in self._note_counts())
 
     @staticmethod
-    def _item_to_string(combo: LengthPattern, separator: str, mapping: NoteMapping) -> PatternString:
-        """Change a combination to a string. Default mapping is `SYMBOLS`."""
-        return separator.join(mapping[note] for note in combo)
-
-    def as_string(
-            self,
-            combos: Iterator[LengthPattern],
-            separator: str = " ",
-            mapping: Optional[NoteMapping] = None,
-    ) -> Generator[PatternString, None, None]:
-        """Change a sequence of note lengths to a string."""
-        if mapping is None:
-            mapping = SYMBOLS
-        yield from (self._item_to_string(combo, separator, mapping) for combo in combos)
+    def as_string(patterns: Iterator[Pattern]) -> Generator[PatternString, None, None]:
+        yield from (str(pattern) for pattern in patterns)
 
     def __iter__(self) -> Generator[PatternString, None, None]:
         yield from self.as_string(self.all_combos())
@@ -100,10 +123,10 @@ class NoteGenerator:
         else:
             return next(it.islice(self, start, start+1, step))
 
-    def head(self, n: int = 5) -> list[PatternString]:
+    def head(self, n: int = 5) -> list[Pattern]:
         return list(self[:n])
 
-    def choice(self, n_choices: int = 1) -> list[PatternString]:
+    def choose(self, n_choices: int = 1) -> list[Pattern]:
         """
         Choose a list of random notes.
 
@@ -116,4 +139,4 @@ class NoteGenerator:
 
 
 if __name__ == "__main__":
-    ...
+    print(PatternGenerator(10).choose(5))
