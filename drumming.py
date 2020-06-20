@@ -241,8 +241,8 @@ if __name__ == "__main__":
     print()
     print("Midi stuff")
     print("----------")
-    pattern = Pattern.from_string("_...__..", representations="._")
+    p = Pattern.from_string("_...__..", representations="._")
     synth = MidiSynthesizer()
-    print("Playing", repr(pattern))
-    for output in synth.play_pattern(pattern):
+    print("Playing", repr(p))
+    for output in synth.play_pattern(p):
         print(output)
