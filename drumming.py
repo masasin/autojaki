@@ -109,7 +109,13 @@ class Patterns:
 
     def __iter__(self) -> Generator[Pattern, None, None]:
         yield from self.patterns
-    
+
+    def __getitem__(self, index: Union[slice, int]) -> Union["Patterns", Pattern]:
+        try:
+            return next(it.islice(self.patterns, index, index + 1))
+        except TypeError:
+            return Patterns(it.islice(self, index.start, index.stop, index.step))
+
     def __add__(self, other) -> "Patterns":
         if isinstance(other, Pattern):
             return Patterns(it.chain(self.patterns, other))
@@ -161,10 +167,7 @@ class PatternGenerator:
         yield from self.patterns
 
     def __getitem__(self, index: Union[slice, int]) -> Union[Patterns, Pattern]:
-        try:
-            return next(it.islice(self.patterns, index, index + 1))
-        except TypeError:
-            return Patterns(it.islice(self, index.start, index.stop, index.step))
+        return self.patterns[index]
 
     def head(self, n: int = 5) -> Patterns:
         return self[:n]
