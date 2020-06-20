@@ -140,4 +140,6 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-.python-version
+/.python-version
+/.pyenv/
+/.idea/
