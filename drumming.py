@@ -60,7 +60,7 @@ class Note:
 
 class Pattern:
     def __init__(self, notes: Iterator[Note], *, separator: str = ""):
-        self.notes: Iterator[Note] = notes
+        self.notes: list[Note] = list(notes)
         self.separator: str = separator
 
     def __iter__(self) -> Generator[Note, None, None]:
