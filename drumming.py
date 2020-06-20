@@ -1,16 +1,15 @@
 import dataclasses
+import functools as ft
 import itertools as it
+import operator as op
 import random
-from typing import Generator, Iterator, Optional, Union
+from typing import Generator, Iterator, Union
 
 
 NoteLength = int
 NoteString = str
-PatternLength = int
 PatternString = str
 NoteMapping = dict[NoteLength, NoteString]
-LengthPattern = list[NoteLength]
-NotePattern = list[NoteString]
 
 
 SYMBOLS: NoteMapping = {
@@ -52,29 +51,62 @@ class Note:
         self.number = number
         self.symbol = self.symbols[length]
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Note({self.length}, {self.number})"
 
-    def __str__(self):
+    def __str__(self) -> NoteString:
         return self.symbol
 
 
 class Pattern:
-    def __init__(self, notes: Iterator[Note], *, separator: str = " ", synthesizer: Synthesizer=None):
-        self.notes: list[Note] = list(notes)
+    def __init__(self, notes: Iterator[Note], *, separator: str = " "):
+        self.notes: Iterator[Note] = notes
         self.separator: str = separator
-        self.synthesizer: Synthesizer = synthesizer
+
+    def __iter__(self) -> Generator[Note, None, None]:
+        yield from self.notes
+
+    def __repr__(self) -> str:
+        return f"Pattern({str(self)})"
+
+    def __str__(self) -> PatternString:
+        return self.separator.join(str(note) for note in self.notes)
+
+    def __add__(self, other):
+        if isinstance(other, Note):
+            return Pattern(it.chain(self.notes, other))
+        elif isinstance(other, Pattern):
+            return Pattern(it.chain(self.notes, other.notes))
+
+
+class Patterns:
+    def __init__(self, patterns: Iterator[Pattern], *, separator: str = ", "):
+        self.patterns: Iterator[Pattern] = patterns
+        self.separator = separator
 
     def __repr__(self):
-        return f"Pattern({self.notes})"
+        return f"Patterns([{str(self)}])"
 
     def __str__(self):
-        return self.separator.join(str(note) for note in self.notes)
+        return self.separator.join(str(pattern) for pattern in self)
+
+    def __iter__(self):
+        yield from self.patterns
+    
+    def __add__(self, other):
+        if isinstance(other, Pattern):
+            return it.chain(self.patterns, other)
+        elif isinstance(other, Patterns):
+            return it.chain(self.patterns, other.patterns)
+
+    def join(self):
+        return ft.reduce(op.add, self)
 
 
 class PatternGenerator:
     def __init__(self, pattern_length):
         self.pattern_length = pattern_length
+        self.patterns = self._all_patterns()
 
     def __len__(self):
         return self.n_combos(self.pattern_length)
@@ -94,7 +126,7 @@ class PatternGenerator:
         yield from ((n_singles, n_doubles) for n_doubles, n_singles in enumerate(range(self.pattern_length, -1, -2)))
 
     @staticmethod
-    def _expand_counts(counts: tuple[NoteLength, NoteLength]) -> Generator[Pattern, None, None]:
+    def _generate_pattern(counts: tuple[NoteLength, NoteLength]) -> Generator[Pattern, None, None]:
         """Yield the combinations for a given number of note types."""
         singles, doubles = counts
         n_notes = singles + doubles
@@ -104,29 +136,22 @@ class PatternGenerator:
                 notes[position] = Note(2)
             yield Pattern(notes)
 
-    def all_combos(self) -> Generator[Pattern, None, None]:
-        """Yield all combinations for a total length."""
-        yield from it.chain.from_iterable(self._expand_counts(counts) for counts in self._note_counts())
+    def _all_patterns(self) -> Patterns:
+        return Patterns(it.chain.from_iterable(self._generate_pattern(counts) for counts in self._note_counts()))
 
-    @staticmethod
-    def as_string(patterns: Iterator[Pattern]) -> Generator[PatternString, None, None]:
-        yield from (str(pattern) for pattern in patterns)
+    def __iter__(self) -> Generator[Pattern, None, None]:
+        yield from self.patterns
 
-    def __iter__(self) -> Generator[PatternString, None, None]:
-        yield from self.as_string(self.all_combos())
+    def __getitem__(self, index: Union[slice, int]) -> Union[Patterns, Pattern]:
+        try:
+            return next(it.islice(self.patterns, index, index + 1))
+        except TypeError:
+            return Patterns(it.islice(self, index.start, index.stop, index.step))
 
-    def __getitem__(self, start: Union[slice, int], stop: Optional[int] = None, step: int = 1):
-        if stop is not None:
-            return next(it.islice(self, start, stop, step))
-        if isinstance(start, slice):
-            yield from it.islice(self, start.start, start.stop, start.step)
-        else:
-            return next(it.islice(self, start, start+1, step))
+    def head(self, n: int = 5) -> Patterns:
+        return Patterns(self[:n])
 
-    def head(self, n: int = 5) -> list[Pattern]:
-        return list(self[:n])
-
-    def choose(self, n_choices: int = 1) -> list[Pattern]:
+    def choose(self, n_choices: int = 1) -> Patterns:
         """
         Choose a list of random notes.
 
@@ -135,8 +160,17 @@ class PatternGenerator:
         This exhausts the generator. It has to generate every single combination first.
 
         """
-        return random.choices(list(self), k=n_choices)
+        return Patterns(random.choices(list(self), k=n_choices))
+
+    def reset(self) -> None:
+        self.patterns = self._all_patterns()
 
 
 if __name__ == "__main__":
-    print(PatternGenerator(10).choose(5))
+    print(f"Patterns repr: {PatternGenerator(5).head()!r}")
+    print(" Patterns str:          ", PatternGenerator(5).head())
+    print(f" Pattern repr: {PatternGenerator(5)[3]!r}")
+    print("  Pattern str:        ", PatternGenerator(5)[3])
+    print("Choice:", PatternGenerator(5).choose(5))
+    print("Head: ", PatternGenerator(5).head())
+    print("Join: ", PatternGenerator(5).head().join())
