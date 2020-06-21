@@ -11,7 +11,7 @@ class PatternGenerator:
         self.pattern_length: PatternLength = pattern_length
         self.patterns: Patterns = self._all_patterns()
 
-    def __len__(self) -> int:
+    def __len__(self) -> PatternLength:
         return self.n_combos(self.pattern_length)
 
     @staticmethod
