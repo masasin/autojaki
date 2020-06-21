@@ -2,8 +2,8 @@ import itertools as it
 import random
 from typing import Generator, Union
 
-from helpers import NoteLength, PatternLength
-from representation import Note, Pattern, Patterns
+from .helpers import NoteLength, PatternLength
+from .representation import Note, Pattern, Patterns
 
 
 class PatternGenerator:

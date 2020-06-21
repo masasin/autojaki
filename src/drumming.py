@@ -1,6 +1,6 @@
-from representation import Pattern
-from generation import PatternGenerator
-from synthesizers import MidiSynthesizer
+from .representation import Pattern
+from .generation import PatternGenerator
+from .synthesizers import MidiSynthesizer
 
 
 if __name__ == "__main__":
@@ -8,6 +8,7 @@ if __name__ == "__main__":
     print(" Patterns str:          ", PatternGenerator(5).head())
     print(f" Pattern repr: {PatternGenerator(5)[3]!r}")
     print("  Pattern str:        ", PatternGenerator(5)[3])
+    print("Pattern slice:        ", PatternGenerator(5)[3:8])
     print("Choice:", PatternGenerator(5).choose(5))
     print("Head: ", PatternGenerator(5).head())
     print(f"Join: {PatternGenerator(5).head().join()!r}")

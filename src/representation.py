@@ -3,7 +3,7 @@ import itertools as it
 import operator as op
 from typing import Generator, Iterator, Optional, Union, overload
 
-from helpers import (
+from .helpers import (
     NoteRepresentations,
     NoteLength,
     NoteString,

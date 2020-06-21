@@ -3,7 +3,7 @@ import dataclasses as dc
 import itertools as it
 from typing import Generator
 
-from representation import Note, Pattern
+from .representation import Note, Pattern
 
 
 @dc.dataclass
