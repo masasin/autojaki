@@ -1,6 +1,6 @@
 import itertools as it
 import random
-from typing import Generator, Union
+from typing import Generator, Tuple, Union
 
 from .helpers import NoteLength, PatternLength
 from .representation import Note, Pattern, Patterns
@@ -24,13 +24,13 @@ class PatternGenerator:
         """Return the number of note combinations with a total length of `length`."""
         return self._fib(pattern_length + 1)
 
-    def _note_counts(self) -> Generator[tuple[NoteLength, NoteLength], None, None]:
+    def _note_counts(self) -> Generator[Tuple[NoteLength, NoteLength], None, None]:
         """Yield the count combination of single and double notes with a total length of `length`."""
         for n_doubles, n_singles in enumerate(range(self.pattern_length, -1, -2)):
             yield n_singles, n_doubles
 
     @staticmethod
-    def _generate_pattern(counts: tuple[NoteLength, NoteLength]) -> Generator[Pattern, None, None]:
+    def _generate_pattern(counts: Tuple[NoteLength, NoteLength]) -> Generator[Pattern, None, None]:
         """Yield the combinations for a given number of note types."""
         singles, doubles = counts
         n_notes = singles + doubles
