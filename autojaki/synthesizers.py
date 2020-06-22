@@ -30,7 +30,7 @@ class Synthesizer(abc.ABC):
         raise NotImplementedError
 
 
-class MidiSynthesizer(Synthesizer):
+class FakeMidiSynthesizer(Synthesizer):
     def __init__(self, note_number: int = 60, velocities: SynthVelocities = SynthVelocities(), midi_channel: int = 0):
         self.note_number = note_number
         self.velocities = velocities
