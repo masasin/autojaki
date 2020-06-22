@@ -24,7 +24,7 @@ class MidiNote:
     off_channel: int = 0x80
     off_duration: float = 0.05
 
-    def play(self, midi_out):
+    def play(self, midi_out: rtmidi.MidiOut):
         note_on = [self.on_channel, self.note_number, self.velocity]
         note_off = [self.off_channel, self.note_number, self.velocity]
         midi_out.send_message(note_on)
@@ -77,7 +77,7 @@ class MidiSynthesizer(Synthesizer):
         self.velocities = velocities
         self.midi_channel = midi_channel
         self.midi_port = midi_port
-        self._midi_out = None
+        self._midi_out: rtmidi.MidiOut = None
 
     def play_pattern(self, pattern: Pattern) -> None:
         pattern_prev, pattern_curr = it.tee(pattern)
