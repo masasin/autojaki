@@ -1,3 +1,4 @@
+from collections import UserList
 import functools as ft
 import itertools as it
 import operator as op
@@ -56,28 +57,16 @@ class Note:
         return self.length == 2
 
 
-class Pattern:
-    def __init__(self, notes: Iterator[Note], *, separator: str = ""):
-        self.notes: list[Note] = list(notes)
-        self.separator: str = separator
-
-    def __iter__(self) -> Generator[Note, None, None]:
-        yield from self.notes
-
-    def __getitem__(self, index: int) -> Note:
-        return self.notes[index]
-
+class Pattern(UserList):
     def __repr__(self) -> str:
         return f"Pattern({str(self)})"
 
     def __str__(self) -> PatternString:
-        return self.separator.join(str(note) for note in self.notes)
+        return "".join(str(note) for note in self.notes)
 
-    def __add__(self, other) -> "Pattern":
-        if isinstance(other, Note):
-            return Pattern(it.chain(self.notes, other))
-        elif isinstance(other, Pattern):
-            return Pattern(it.chain(self.notes, other.notes))
+    @property
+    def notes(self):
+        return self.data
 
     @classmethod
     def from_string(
