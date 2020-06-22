@@ -8,3 +8,4 @@ PatternLength = int
 PatternString = str
 DecodeMapping = Dict[NoteLength, NoteString]
 EncodeMapping = Dict[NoteString, NoteLength]
+SynthVelocities = Dict[str, int]

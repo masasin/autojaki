@@ -4,14 +4,15 @@ import itertools as it
 import time
 from typing import Generator, Optional
 
+from .helpers import SynthVelocities
 from .representation import Note, Pattern
 
 
-@dc.dataclass
-class SynthVelocities:
-    accent: int = 127
-    normal: int = 100
-    soft: int = 50
+SYNTH_VELOCITIES = {
+    "accent": 127,
+    "normal": 100,
+    "soft": 50,
+}
 
 
 @dc.dataclass
@@ -43,9 +44,9 @@ class Synthesizer(abc.ABC):
 
 
 class FakeMidiSynthesizer(Synthesizer):
-    def __init__(self, note_number: int = 60, velocities: SynthVelocities = SynthVelocities(), midi_channel: int = 0):
+    def __init__(self, note_number: int = 60, velocities: Optional[SynthVelocities] = None, midi_channel: int = 0):
         self.note_number = note_number
-        self.velocities = velocities
+        self.velocities = SYNTH_VELOCITIES if velocities is None else velocities
         self.midi_channel = midi_channel
 
     def play_pattern(self, pattern: Pattern) -> Generator[MidiNote, None, None]:
@@ -71,7 +72,6 @@ class MidiSynthesizer(Synthesizer):
             velocities: SynthVelocities = SynthVelocities(),
             midi_channel: int = 0x90,
             midi_port: Optional[int] = None,
-
     ):
         self.note_number = note_number
         self.velocities = velocities
@@ -91,7 +91,7 @@ class MidiSynthesizer(Synthesizer):
 
     def play_note(self, note: Note, follows_double: bool = False) -> None:
         if note.is_single:
-            velocity = self.velocities.accent if follows_double else self.velocities.normal
+            velocity = self.velocities["accent"] if follows_double else self.velocities["normal"]
             MidiNote(
                 on_channel=self.midi_channel,
                 note_number=self.note_number,
@@ -101,10 +101,10 @@ class MidiSynthesizer(Synthesizer):
             MidiNote(
                 on_channel=self.midi_channel,
                 note_number=self.note_number,
-                velocity=self.velocities.normal
+                velocity=self.velocities["normal"]
             ).play(self._midi_out)
             MidiNote(
                 on_channel=self.midi_channel,
                 note_number=self.note_number,
-                velocity=self.velocities.soft
+                velocity=self.velocities["soft"]
             ).play(self._midi_out)
