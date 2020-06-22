@@ -86,15 +86,14 @@ class Pattern(UserList):
 
 
 class Patterns:
-    def __init__(self, patterns: Iterator[Pattern], *, separator: str = ", "):
-        self.patterns: Iterator[Pattern] = patterns
-        self.separator: str = separator
+    def __init__(self, patterns: Iterator[Pattern]):
+        self._original_patterns, self.patterns = it.tee(patterns)
 
     def __repr__(self) -> str:
         return f"Patterns([{str(self)}])"
 
     def __str__(self) -> str:
-        return self.separator.join(str(pattern) for pattern in self)
+        return ", ".join(str(pattern) for pattern in self)
 
     def __iter__(self) -> Generator[Pattern, None, None]:
         yield from self.patterns
@@ -119,3 +118,6 @@ class Patterns:
 
     def join(self) -> Pattern:
         return ft.reduce(op.add, self)
+
+    def reset(self) -> None:
+        self._original_patterns, self.patterns = it.tee(self._original_patterns)
